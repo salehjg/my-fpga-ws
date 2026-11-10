@@ -1,8 +1,8 @@
 # DU-PCB-001-003 (SCH-001-003): Kintex-7 480T accelerator card
 
-![Unit 0265 front, every IC labelled](unit0265_front_labeled.jpg)
+![Unit 0265 front, every IC labelled](images/unit0265_front_labeled.jpg)
 
-![Unit 0265 back, every IC labelled](unit0265_back_labeled.jpg)
+![Unit 0265 back, every IC labelled](images/unit0265_back_labeled.jpg)
 
 *This workspace's unit (serial `0265`), with every IC labelled.*
 - **Label colours:** white box with green border = identified, yellow = unidentified (TODO), grey = not populated. The purple labels sit on the DRAM chips.
@@ -15,7 +15,7 @@
 3. [Integrated circuits](#3-integrated-circuits): every chip, with photo, marking and datasheet
 4. [Connectors, switches and LEDs](#4-connectors-switches-and-leds)
 5. [FPGA I/O banks and power](#5-fpga-io-banks-and-power): banks, VCCO, GTX quads, supply rails
-6. [Interfaces and pinout](#6-interfaces-and-pinout): clocks, DDR3, flash, PCIe, I²C, LEDs, JTAG
+6. [Interfaces and pinout](#6-interfaces-and-pinout): clocks, DDR3, flash, PCIe, I²C, LEDs, JTAG, fan, full pin map
 7. [Working with Vivado](#7-working-with-vivado): board files, constraints, programming
 8. [Example design](#8-example-design): the MicroBlaze system test and host software
 9. [Known issues, open questions and TODOs](#9-known-issues-open-questions-and-todos)
@@ -33,12 +33,12 @@ A PCIe x8 FPGA accelerator card. The silkscreen says it was designed by Baidu US
 
 | | |
 |---|---|
-| FPGA | Xilinx Kintex-7 **XC7K480T**, FFG1156 package. The chips are marked **`L2I`** (the -2LI grade), although the upstream files assume -2 ([U3](#u3-xilinx-xc7k480t-l2ffg1156i)) |
+| FPGA | Xilinx Kintex-7 **XC7K480T-L2FFG1156I**: the low-power -2LI grade (marked `L2I`), Vivado part `xc7k480tiffg1156-2L` ([U3](#u3-xilinx-xc7k480t-l2ffg1156i)) |
 | Memory | 18 × SK hynix DDR3L, forming two independent 72-bit ECC channels: **4 GB usable** ([§6.2](#62-ddr3-memory)) |
 | Configuration flash | Micron 512 Mb (64 MB) parallel NOR, BPI x16 ([§6.3](#63-bpi-configuration-flash)) |
 | Host interface | PCIe Gen2 x8 ([§6.4](#64-pci-express)) |
 | Other | LM73 temperature sensor, PCIe SMBus, 14-pin JTAG header, fan header, 4 bracket LEDs, 2 push buttons ([§4](#4-connectors-switches-and-leds), [§6](#6-interfaces-and-pinout)) |
-| Vivado support | Board files, constraints and a MicroBlaze/XDMA example inherited from YPCB-00338-1P1 ([§7](#7-working-with-vivado), [§8](#8-example-design)) |
+| Vivado support | Corrected board files in this folder ([§7.1](#71-board-files)); constraints and a MicroBlaze/XDMA example inherited from YPCB-00338-1P1 ([§7.2](#72-constraints-for-hdl-flows), [§8](#8-example-design)) |
 
 ### 1.2 Identification
 
@@ -56,7 +56,7 @@ A PCIe x8 FPGA accelerator card. The silkscreen says it was designed by Baidu US
 The card is a close relative of the Inspur **YPCB-00338-1P1** ([sibling README](../YPCB-00338-1P1-kintex7-480t/README.md)). The DU-PCB-001-003 support repository copies TiferKing's YPCB-00338-1P1 board files, constraints and examples **byte for byte**.
 
 > [!IMPORTANT]
-> **Every pin assignment in this document comes from the YPCB-00338-1P1 files.** The DU-PCB-001-003 repo does not document any test of this board.
+> **Every pin assignment in this document comes from the YPCB-00338-1P1 files.** Only one connection has been checked on this card: the PCIe SMBus goes through U28 (continuity test on unit 0265). Treat all other pin data as inherited, not verified.
 >
 > **Evidence that the two boards share a layout:**
 > - All 18 DRAMs carry exactly the designators the YPCB pinout sheet uses (U1 and U5–U21).
@@ -64,9 +64,7 @@ The card is a close relative of the Inspur **YPCB-00338-1P1** ([sibling README](
 >
 > **Evidence that the designators don't all match:**
 > - The sheet calls the LM73 "U22"; on this card the LM73 is **U27** ([U27](#u27-ti-lm73-0-temperature-sensor)).
-> - The sheet ties the PCIe SMBus to "U26", but on this card U26's placement suggests it serves the LM73 instead ([§6.5](#65-i2c-buses)).
->
-> Treat anything not marked "seen on the photos" as **inherited, not verified on this card**.
+> - The sheet ties the PCIe SMBus to "U26"; on this card the SMBus goes through **U28** (continuity-checked on unit 0265), and U26 serves the LM73 ([§6.5](#65-i2c-buses)).
 
 ### 1.4 The two documented units
 
@@ -74,13 +72,14 @@ The two boards look identical; only the lot and date codes, the U4 sticker and t
 
 | | Unit 0300 (upstream repo photos) | Unit 0265 (this workspace, photographed 2026-11-10) |
 |---|---|---|
-| Photos | ![front, unit 0300](board_front.jpg) ![back, unit 0300](board_back.jpg) | ![front, unit 0265](unit0265_front.jpg) ![back, unit 0265](unit0265_back.jpg) |
+| Photos | ![front, unit 0300](images/board_front.jpg) ![back, unit 0300](images/board_back.jpg) | ![front, unit 0265](images/unit0265_front.jpg) ![back, unit 0265](images/unit0265_back.jpg) |
 | Label | `SCH-001-003-20160218-0300` | `SCH-001-003-20160218-0265` |
 | Edge text | `-TGUz89-03-036-930` | `-TGUz89-03-001-008` |
 | FPGA marking | `FFG1156ACX1533`, `DF5113101A`, `L2I` (faint) | `FFG1156ABX1537`, `DD5124319A`, **`L2I`** (clear) |
 | DRAM date codes | `546V` (front), `547V` (back) | `546V` (both sides) |
 | U4 (flash) | Covered by a `001` sticker | No sticker: Micron logo, `57AB7` / `RB119` / `X9FC` |
 | Modifications | None visible | Fan on J3; ribbon cable soldered to J1 ([§6.7](#67-jtag)) |
+| Electrical checks | None documented | Continuity: U28 connects to the PCIe SMBus fingers ([§6.5](#which-repeater-is-which)); the fan's yellow wire on J3 goes to R250 ([§6.8](#68-fan-header)) |
 
 ---
 
@@ -125,7 +124,7 @@ flowchart LR
     U3["U3<br/>Xilinx XC7K480T<br/>-2LI · FFG1156"]
     Y3["Y3<br/>oscillator, 6-pad<br/>200 MHz? · TODO"]
     U29["U29<br/>M552 EF4S · TODO"]
-    U28["U28<br/>NXP PCA9517A<br/>I2C repeater"]
+    U28["U28<br/>NXP PCA9517A<br/>PCIe SMBus repeater"]
     J2["J2<br/>PCIe x8 edge fingers"]
     U27 ~~~ Y1 ~~~ U3 ~~~ Y3 ~~~ U29 ~~~ U28 ~~~ J2
   end
@@ -155,7 +154,7 @@ flowchart LR
   subgraph F5["Far end"]
     direction TB
     U37["U37<br/>MPEE 3830 · TODO"]
-    U38["U38<br/>1200 58F · TODO"]
+    U38["U38<br/>1200 58F<br/>TPS51200? · TODO"]
     U4["U4<br/>Micron MT28GU512AAA1EGC<br/>512 Mb BPI flash"]
     L4["L4 0.68 µH<br/>(for U36 on the back)"]
     SW3["SW3<br/>ON switch · TODO"]
@@ -213,7 +212,7 @@ flowchart LR
 
   subgraph B3["Behind the FPGA"]
     direction TB
-    U26["U26<br/>NXP PCA9517A<br/>I2C repeater (LM73 bus?)"]
+    U26["U26<br/>NXP PCA9517A<br/>I2C repeater (LM73 bus)"]
     U3132["U32 · U31<br/>unpopulated footprints"]
     Y2["Y2<br/>oscillator, 4-pad<br/>50 MHz? · TODO"]
     CAPS["FPGA decoupling<br/>capacitor field"]
@@ -248,8 +247,8 @@ flowchart LR
 
 ### 2.3 How the chips connect
 
-- **Solid lines** come from the repo's pin data (`part0_pins.xml`, the MIG `.prj` files, the XDC).
-- **Dashed lines** are inferred or unverified: the oscillator-to-pin assignment, the power rails, the I²C repeaters, the LED mapping and which switch is which.
+- **Solid lines** come from the repo's pin data (`part0_pins.xml`, the MIG `.prj` files, the XDC), plus one link checked on the board: the PCIe SMBus through U28.
+- **Dashed lines** are inferred or unverified: the oscillator-to-pin assignment, the power rails, the LM73's repeater (U26, by elimination), the LED mapping and which switch is which.
 
 ```mermaid
 flowchart LR
@@ -282,9 +281,9 @@ flowchart LR
   subgraph IO["Board I/O"]
     direction TB
     U4["U4<br/>Micron MT28GU512AAA1EGC<br/>64 MB BPI flash"]
-    U28["U28<br/>NXP PCA9517A<br/>I2C repeater"]
+    U28["U28<br/>NXP PCA9517A<br/>PCIe SMBus repeater"]
     U27["U27<br/>TI LM73-0<br/>temp sensor 0x4A"]
-    U26["U26<br/>NXP PCA9517A<br/>I2C repeater"]
+    U26["U26<br/>NXP PCA9517A<br/>LM73 I2C repeater"]
     J1["J1<br/>JTAG 14-pin"]
     LEDS["LED3–LED6<br/>bracket LEDs"]
     SW12["SW1 · SW2"]
@@ -301,8 +300,8 @@ flowchart LR
   MEM ~~~ UNK
   J2 ==>|"Gen2 x8<br/>GTX X0Y16–23"| U3
   J2 -->|"REFCLK 100 MHz J8/J7<br/>PERST# Y26"| U3
-  J2 -.->|"SMBus B5 / B6"| U28
-  U28 -.->|"R26 / R27"| U3
+  J2 -->|"SMBus B5 / B6"| U28
+  U28 -->|"R26 / R27"| U3
 
   Y1 -.->|"AH27/AH28 or G25/G26"| U3
   Y3 -.->|"AH27/AH28 or G25/G26"| U3
@@ -352,7 +351,7 @@ Every IC found on the photos, grouped by function. The photos come from unit 026
 | [Memory](#32-memory) | [U1, U5–U21](#u1-u5u21-sk-hynix-h5tc2g83ffr-pba-ddr3l) | 18× SK hynix H5TC2G83FFR-PBA DDR3L | Identified; no official datasheet link (TODO) |
 | | [U4](#u4-micron-mt28gu512aaa1egc-0sit-flash) | Micron MT28GU512AAA1EGC-0SIT BPI flash | Identified |
 | [Board management](#33-board-management) | [U27](#u27-ti-lm73-0-temperature-sensor) | TI LM73CIMKX-0 temperature sensor | Identified |
-| | [U26](#u26-nxp-pca9517a-i2c-repeater), [U28](#u28-nxp-pca9517a-i2c-repeater) | NXP PCA9517A I²C repeaters | Identified; which bus each serves is unverified |
+| | [U26](#u26-nxp-pca9517a-i2c-repeater), [U28](#u28-nxp-pca9517a-i2c-repeater) | NXP PCA9517A I²C repeaters | Identified. U28 = PCIe SMBus (continuity-checked), U26 = LM73 bus (by elimination) |
 | [Power](#34-power) | [U33](#u33-ti-tps40428-buck-controller) | TI TPS40428 buck controller | Identified |
 | | [Q8](#q8-power-stage-marked-95378bmc), [Q7](#q7-power-stage-marked-95378bmc) | Marked `95378BMC` (TI) | Marking matches TI's CSD95378B power stage, package doesn't (TODO?) |
 | | [U36](#u36-ti-tps53319-buck-converter) | TI TPS53319 buck converter | Identified |
@@ -372,11 +371,10 @@ Every IC found on the photos, grouped by function. The photos come from unit 026
 | Package / location | FFG1156 (35 × 35 mm, 1.0 mm pitch), front, centre. The silkscreen `U3` sits at its left edge |
 | Datasheets | [DS182, Kintex-7 DC and AC switching characteristics](https://docs.amd.com/v/u/en-US/ds182_Kintex_7_Data_Sheet); local [7-series product selection guide](../../submodules/DU-PCB-001-003/documents/7-series-product-selection-guide.pdf) |
 
-**Speed grade: -2LI, not -2I.**
-- **Marking:** the 4th line reads **`L2I`**, clearly on unit 0265 and faintly on unit 0300. That is the low-power -2L grade at industrial temperature, ordering code **XC7K480T-L2FFG1156I**.
-- **Upstream claim:** the upstream README says "XC7K480T-2FFG1156I", and the board files target `xc7k480tffg1156-2`.
-- **What DS182 says:** -2LI devices run at **VCCINT = 0.95 V**, and at that voltage they have the same speed specifications as -2. So the `-2` timing used by the board files is equivalent, but the core supply must be 0.95 V. **TODO:** measure VCCINT ([§5.3](#53-supplies-and-regulators)).
-- **Exact Vivado part:** Vivado lists the low-voltage variant under its own part name. Check with `get_parts xc7k480t*ffg1156*`.
+**Speed grade: -2LI, Vivado part `xc7k480tiffg1156-2L`.**
+- **Marking:** the line under the lot code reads **`L2I`**, clearly on unit 0265 and faintly on unit 0300. In the DS180 ordering scheme that is speed grade `-L2` (the low-power -2L) and temperature range `I` (industrial), so the ordering code is **XC7K480T-L2FFG1156I**. The upstream README says "XC7K480T-2FFG1156I", and the submodule's board files target the plain `xc7k480tffg1156-2`.
+- **Core voltage:** DS182 says -2L industrial devices run only at **VCCINT = 0.95 V**, where they have the same speed specifications as -2, except where noted. **TODO:** measure VCCINT ([§9](#measurements-to-make-on-the-board)).
+- **Vivado part:** DS182 (v2.19, "Selecting the Correct Speed Grade and Voltage in the Vivado Tools") names a -2LI part as the device name, then `i`, then the package, then the speed grade; its example is `xc7k325tiffg900-2L`. For this chip that gives **`xc7k480tiffg1156-2L`**, supported since Vivado 2014.4. The look-alikes are other grades: `xc7k480tffg1156-2L` is -2LE at 1.0 V and `xc7k480tlffg1156-2L` is -2LE at 0.9 V. This folder's board files use `xc7k480tiffg1156-2L` ([§7.1](#71-board-files)); it has not been checked in Vivado yet ([§9](#9-known-issues-open-questions-and-todos)).
 
 **Resources** (from the selection guide):
 
@@ -434,7 +432,7 @@ Every IC found on the photos, grouped by function. The photos come from unit 026
 - **Supply and bus:** 2.7–5.5 V supply; SMBus/I²C up to 400 kHz, with a bus time-out; SDA and ALERT are open-drain.
 - **Address 0x4A:** the LM73-0 answers at 0x48 (ADDR floating), 0x49 (ADDR to GND) or **0x4A (ADDR to VDD)**; the LM73-1 at 0x4C, 0x4D or 0x4E. This board uses 0x4A, so ADDR is tied to VDD.
 - **Data:** 11 to 14 bits; the default is 11-bit, 0.25 °C/LSB, 14 ms per conversion. Values are left-justified two's complement, so °C = raw16 / 128. Accuracy is ±1 °C from −10 to 80 °C.
-- **Wiring:** SCL N24, SDA N25, ALERT P25, probably through U26 ([§6.5](#65-i2c-buses)).
+- **Wiring:** SCL N24, SDA N25, ALERT P25. SCL/SDA go through U26 (by elimination, since U28 is on the PCIe SMBus; [§6.5](#65-i2c-buses)).
 - **Correction:** the YPCB pinout sheet calls the LM73 "U22". On this card U22 is a different part ([U22](#u22-z70)).
 
 | Pointer | Register | Access | Reset value |
@@ -459,7 +457,7 @@ Every IC found on the photos, grouped by function. The photos come from unit 026
 **What the part is:** a level-translating I²C/SMBus repeater for **one** bus; its two channels are that bus's SCL and SDA.
 - **Port A** is the low-voltage side (0.9–5.5 V). **Port B** is the 2.7–5.5 V side.
 - **TSSOP8 pinout:** 1 VCC(A), 2 SCLA, 3 SDAA, 4 GND, 5 EN, 6 SDAB, 7 SCLB, 8 VCC(B).
-- **Which bus:** probably the LM73 bus (by placement), although the YPCB sheet says the PCIe SMBus. See [§6.5](#65-i2c-buses) for the reasoning and a continuity test.
+- **Which bus:** the LM73 bus. U28 was continuity-checked to the PCIe SMBus, so U26 serves the LM73 by elimination, which matches its placement. The YPCB sheet's "U26 = PCIe SMBus" is wrong for this card ([§6.5](#which-repeater-is-which)).
 
 #### U28: NXP PCA9517A I2C repeater
 
@@ -471,7 +469,7 @@ Every IC found on the photos, grouped by function. The photos come from unit 026
 | Package / location | TSSOP-8, front, next to the PCIe edge connector, below Y3 |
 | Datasheet | [NXP PCA9517A](https://www.nxp.com/docs/en/data-sheet/PCA9517A.pdf) |
 
-The same part as U26. It probably serves the **PCIe SMBus**: it sits next to the short segment of the edge connector, which carries SMCLK (B5) and SMDAT (B6). See [§6.5](#65-i2c-buses).
+The same part as U26. It serves the **PCIe SMBus** (SMCLK on finger B5, SMDAT on B6): a continuity test on unit 0265 confirmed it, and it sits next to the short segment of the edge connector that carries those fingers. See [§6.5](#65-i2c-buses).
 
 ### 3.4 Power
 
@@ -489,7 +487,8 @@ What each regulator supplies is not documented; the rails are summarised in [§5
 
 **What the part is:** a dual-output or two-phase synchronous buck controller with PMBus. It is "driverless": it drives external smart power stages, probably Q7 and Q8.
 - **Probable rail:** with Q7/Q8 and the 0.33 µH inductors L1/L2 (marked `1007R6 R33`), it most likely produces the FPGA core rail, VCCINT (0.95 V for -2LI). **Not verified.**
-- **PMBus:** whether its PMBus reaches the FPGA or the edge connector is unknown (TODO).
+- **PMBus:** pins 5 (SMBALERT), 6 (PMBDATA) and 7 (PMBCLK), with SMBus logic levels (VIH 2.1 V, VIL 0.8 V) and rated to 5.5 V. Where they are wired is unknown (**TODO**). If they reach the FPGA or the host, `READ_VOUT` (0x8B) and `READ_IOUT` (0x8C) would report the core rail's voltage and current.
+- **PMBus address:** set by resistors from pin 11 (ADDR1) and pin 12 (ADDR0) to ground. Each picks one octal digit: 8.45 kΩ = 0, 16.2 kΩ = 1, 25.5 kΩ = 2, 37.4 kΩ = 3, 54.9 kΩ = 4, 84.5 kΩ = 5, 133 kΩ = 6, 200 kΩ = 7. The 7-bit address is 8 × ADDR1 + ADDR0. Out-of-range values give 0x7F.
 
 #### Q8: power stage (marked 95378BMC)
 
@@ -663,6 +662,9 @@ The same part as U35.
 |---|---|
 | Marking | `1200`, `58F`, `S06Z` |
 | Package / location | Small QFN (roughly 3 × 3 mm), front, far end of the card near U37 |
+| Datasheet | If it is a TPS51200: [TI TPS51200](https://www.ti.com/lit/ds/symlink/tps51200.pdf) |
+
+**Lead:** possibly a TI **TPS51200** DDR termination regulator. Distributor listings give its top marking as `1200`, and it comes in a 3 × 3 mm 10-pin SON. It would make the DDR3 VTT and VTTREF (both VDDQ / 2) from VDDQ. **TODO?** confirm by measuring its pins against the datasheet pinout.
 
 #### U39 (`UN4MD`)
 
@@ -702,7 +704,7 @@ Everything here was seen on the photos. The pins behind the LEDs and buttons are
 |---|---|---|
 | J2 | PCIe x8 edge connector | Pins A1–A49 on the back and B1–B49 on the front; B1 is the finger nearest the bracket on the short segment ([§6.4](#64-pci-express)) |
 | J1 | 14-pin (2×7) shrouded header | JTAG ([§6.7](#67-jtag)). Pin 1 is marked by a triangle next to the `J1` label; the even pins are on the row nearest the board edge |
-| J3 | 4-pin white wire-to-board connector | **Fan header** (confirmed on unit 0265). An AVC **BAZA0509R2U** blower (12 V, 0.18 A, hydraulic bearing, rev `.002`) plugs in with 3 wires: black, red and yellow (probably ground, +12 V and tach); the 4th position is empty. No fan PWM or tach pin appears in the board files (TODO) |
+| J3 | 4-pin white wire-to-board connector | **Fan header** (confirmed on unit 0265, which has an AVC BAZA0509R2U blower on it). The yellow wire goes to R250 on the back. Wiring and open questions in [§6.8](#68-fan-header) |
 | J4 | Unpopulated footprint | 4 SMD pads and 2 holes, left of J1. On unit 0265 it is buried under hot glue |
 | J5 | Unpopulated 2×5 through-hole header | Near the bracket LEDs. Purpose unknown |
 | LED3–LED6 | 4 right-angle LEDs at the bracket edge | **Red, red, green, yellow** (unit 0265, seen from the back). The board files define only 3 user LEDs ([§6.6](#66-leds-and-buttons)) |
@@ -766,6 +768,7 @@ It has **no HP banks**, so `LVDS` (only `LVDS_25` at 2.5 V VCCO), DCI and VCCAUX
 | VCCO_0, VCCO_11 … VCCO_18 | See [§5.1](#51-io-banks) | — |
 | DDR3 VDDQ | 1.5 V? (or 1.35 V) | Follows the bank-11/12/13/16/17/18 VCCO. Possibly [U36](#u36-ti-tps53319-buck-converter). **TODO?** measure |
 | DDR3 VREF | 0.75 V? | MIG uses an external VREF (internal VREF disabled), so the DDR banks' VREF pins need VCCO/2. **TODO?** measure |
+| DDR3 VTT | 0.75 V? | Termination for the address and command lines, VDDQ / 2. Possibly [U38](#u38-1200-58f-s06z) if it is a TPS51200. **TODO?** measure |
 | MGTAVCC / MGTAVTT / MGTVCCAUX | **TODO?** (DS182 nominal: 1.0 V / 1.2 V / 1.8 V) | The package has two GTX power groups, G10 and G11 |
 
 Other converters ([U35](#u35-mpee-3830-854-m) with its 10 µH inductor, [U40](#u40-marking-unreadable) with L6) probably produce auxiliary rails (**TODO?**).
@@ -781,17 +784,15 @@ Sources: `part0_pins.xml`, the MIG `.prj` files, `constraints/ypcb003381p1.xdc` 
 | Signal | FPGA pin (bank) | I/O standard | Notes |
 |---|---|---|---|
 | 50 MHz system clock | AA28 (14) | LVCMOS18 | Single-ended, probably from [Y2](#y2-oscillator-probably-50-mhz). Board interface `default_50mhz_clk0`; port `SYS_CLK` in the XDC |
-| 200 MHz clock 1 (P / N) | AH27 / AH28 (12) | Board file: `LVDS`, `DQS_BIAS=TRUE` | SRCC pair. System clock for DDR3 **CH0**; from [Y1 or Y3](#y1-oscillator-probably-200-mhz) |
-| 200 MHz clock 2 (P / N) | G25 / G26 (17) | Board file: `LVDS`, `DQS_BIAS=TRUE` | SRCC pair. System clock for DDR3 **CH1**; from [Y1 or Y3](#y3-oscillator-probably-200-mhz) |
+| 200 MHz clock 1 (P / N) | AH27 / AH28 (12) | `DIFF_SSTL15`, `DQS_BIAS=TRUE` | SRCC pair. System clock for DDR3 **CH0**; from [Y1 or Y3](#y1-oscillator-probably-200-mhz) |
+| 200 MHz clock 2 (P / N) | G25 / G26 (17) | `DIFF_SSTL15`, `DQS_BIAS=TRUE` | SRCC pair. System clock for DDR3 **CH1**; from [Y1 or Y3](#y3-oscillator-probably-200-mhz) |
 | PCIe reference clock (P / N) | J8 / J7 (quad 116) | MGT | 100 MHz from the edge connector. Buffer it with `IBUFDSGTE` |
 | PCIe `PERST#` | Y26 (14) | LVCMOS18 | Active low |
-| User reset (`SW_RESET` / `SYS_RSTN`) | R28 (15) | LVCMOS18 | Push button, active low ([§6.6](#66-leds-and-buttons)) |
+
+The user reset button (R28) is listed with the LEDs in [§6.6](#66-leds-and-buttons).
 
 > [!WARNING]
-> **The board file's `LVDS` standard is not valid on the 200 MHz pins.** Vivado accepts `LVDS` only in HP banks, and this package has only HR banks ([§5](#5-fpga-io-banks-and-power)).
-> - In the example design the 200 MHz pins feed MIG directly, and MIG constrains them as **`DIFF_SSTL15`**.
-> - If you connect `default_200mhz_clk1/2` to `clk_wiz` or `util_ds_buf` through the board flow, override the I/O standard (for example to `DIFF_SSTL15`).
-> - The presets also set `util_ds_buf` to `IBUFDSGTE`, which is a transceiver reference-clock buffer. Use `IBUFDS` for these fabric pins.
+> **The submodule's board files get the 200 MHz clocks wrong.** They give the pins `LVDS`, which Vivado accepts only in HP banks (this package has only HR banks, [§5](#5-fpga-io-banks-and-power)), and set `util_ds_buf` to `IBUFDSGTE`, a transceiver reference-clock buffer. This folder's board files use `DIFF_SSTL15`, as MIG does in the example design, and `IBUFDS` ([§7.1](#71-board-files)). With the submodule's files, override both yourself.
 
 ### 6.2 DDR3 memory
 
@@ -811,7 +812,8 @@ In total that is **4 GB usable** and 4.5 GB raw (18 × 256 MB).
 
 The board files offer three presets (MIG 7 Series v4.2): `mig_0.prj`, `mig_1.prj` and `mig_01.prj`.
 - **Which to use:** `mig_01.prj` is one MIG core with both controllers (board interface `ddr3_sdram_ch01`, 4 GB).
-- **Pin check:** its pin set is exactly the union of `mig_0.prj` and `mig_1.prj`. Both `.ucf` files also match their `.prj` files pin for pin. I checked both with a script.
+- **Pin check:** its pin set is exactly the union of `mig_0.prj` and `mig_1.prj`, and both `.ucf` files match their `.prj` files pin for pin (checked with a script).
+- **Target FPGA:** the submodule's presets target `xc7k480t-ffg1156/-2`; this folder's copies target `xc7k480ti-ffg1156/-2L` and are otherwise identical.
 
 **Speed and clocks**
 
@@ -874,75 +876,7 @@ Bank and byte-group placement, from the MIG `datasheet.txt`:
 | 17 (CH1) | Addr/Ctrl-2 | Addr/Ctrl-0 | Addr/Ctrl-1 | DQ[47:40] |
 | 18 (CH1) | DQ[55:48] | DQ[63:56] | DQ[39:32] | DQ[23:16] |
 
-<details>
-<summary>DDR3 address/control pins</summary>
-
-| Signal | CH0 | CH1 |
-|---|---|---|
-| A0 | AK27 | E27 |
-| A1 | AN23 | C27 |
-| A2 | AL24 | B28 |
-| A3 | AK26 | D27 |
-| A4 | AH24 | C24 |
-| A5 | AH25 | D24 |
-| A6 | AL26 | C25 |
-| A7 | AJ24 | A24 |
-| A8 | AJ25 | A25 |
-| A9 | AM23 | J24 |
-| A10 | AL28 | F26 |
-| A11 | AL25 | D26 |
-| A12 | AM25 | H25 |
-| A13 | AK24 | D25 |
-| A14 | AM27 | B26 |
-| BA0 | AM26 | F24 |
-| BA1 | AP24 | J25 |
-| BA2 | AN28 | E24 |
-| CK_P | AN25 | B25 |
-| CK_N | AP25 | A26 |
-| CKE | AP27 | A28 |
-| CS# | AK28 | F28 |
-| RAS# | AJ29 | E28 |
-| CAS# | AP26 | E26 |
-| WE# | AN27 | F25 |
-| ODT | AK29 | B27 |
-| RESET# | AD31 | F18 |
-
-</details>
-
-<details>
-<summary>DDR3 data pins: which chip drives which byte lane, and which side of the board it is on</summary>
-
-The chip-to-lane mapping comes from `physical_pinout.xlsx`. I cross-checked it against the MIG `.prj` files, and all 18 chips match. The "Side" column comes from the photos of both units.
-
-**CH0**
-
-| Byte | Chip | Side | Bank | DQ bits | DQ pins (bit order, low to high) | DQS P / N |
-|---|---|---|---|---|---|---|
-| 0 | U5 | front | 11 | 7:0 | AG17 AG16 AH17 AJ19 AH18 AH19 AJ16 AJ17 | AK16 / AK17 |
-| 1 | U6 | back | 11 | 15:8 | AL20 AN17 AL19 AM16 AL18 AL16 AM20 AN18 | AM17 / AM18 |
-| 2 | U7 | back | 11 | 23:16 | AL23 AN20 AK23 AP19 AN22 AN19 AM22 AP20 | AP21 / AP22 |
-| 3 | U8 | front | 11 | 31:24 | AJ21 AH22 AK21 AG21 AG22 AG20 AH23 AG23 | AH20 / AJ20 |
-| 4 | U9 | back | 13 | 39:32 | AJ32 AK32 AK31 AL30 AL34 AL31 AK34 AL29 | AK33 / AL33 |
-| 5 | U10 | front | 13 | 47:40 | AJ34 AH32 AJ30 AH34 AF31 AG30 AG31 AF30 | AG33 / AH33 |
-| 6 | U11 | front | 13 | 55:48 | AE32 AC33 AF33 AC32 AD34 AC34 AE33 AE31 | AE34 / AF34 |
-| 7 | U12 | back | 12 | 63:56 | AE26 AF29 AE24 AF28 AF24 AG25 AF26 AF25 | AE27 / AE28 |
-| 8 (ECC) | U13 | back | 13 | 71:64 | AN34 AP30 AM33 AN29 AP32 AP29 AM31 AP31 | AN32 / AP33 |
-
-**CH1**
-
-| Byte | Chip | Side | Bank | DQ bits | DQ pins (bit order, low to high) | DQS P / N |
-|---|---|---|---|---|---|---|
-| 0 | U1 | back | 16 | 7:0 | A29 B33 A31 C33 C32 A30 B30 A33 | B31 / B32 |
-| 1 | U14 | front | 16 | 15:8 | D31 F33 D30 D29 E33 E34 E31 F34 | D34 / C34 |
-| 2 | U15 | back | 18 | 23:16 | B23 A21 C23 B20 B22 A23 C20 B21 | A19 / A20 |
-| 3 | U16 | front | 16 | 31:24 | G31 G32 F29 F31 E29 G33 H33 H32 | H29 / H30 |
-| 4 | U17 | back | 18 | 39:32 | B18 C17 C19 B16 A18 A16 C18 B17 | D16 / D17 |
-| 5 | U18 | front | 17 | 47:40 | K27 L24 K24 L28 K26 M27 L25 M26 | K28 / K29 |
-| 6 | U19 | front | 18 | 55:48 | F16 E18 E16 H19 H17 H20 E17 H18 | G17 / G18 |
-| 7 | U20 | back | 18 | 63:56 | D20 F21 E23 G21 G20 D21 F20 F23 | G22 / G23 |
-| 8 (ECC) | U21 | front | 16 | 71:64 | L34 K34 K31 K33 L31 J30 L33 J34 | K32 / J32 |
-
-</details>
+Every DDR3 pin, for both channels and all 18 chips, is listed in [§6.9](#69-full-pin-map).
 
 ### 6.3 BPI configuration flash
 
@@ -1036,10 +970,10 @@ Lane order runs opposite to the GT numbering: lane 0 is on X0Y23. The PCIe SMBus
 
 The FPGA drives two separate I²C buses, each through its own [PCA9517A](https://www.nxp.com/docs/en/data-sheet/PCA9517A.pdf) repeater. For SMBus background, see [NXP/Freescale AN4471, "SMBus Quick Start Guide"](https://www.nxp.com/docs/en/application-note/AN4471.pdf).
 
-| Bus (board interface) | FPGA pins (bank 15) | Other end | Repeater (by placement) | Who controls it |
+| Bus (board interface) | FPGA pins (bank 15) | Other end | Repeater | Who controls it |
 |---|---|---|---|---|
-| `iic_lm73` | SCL N24, SDA N25; ALERT P25 | [LM73](#u27-ti-lm73-0-temperature-sensor) U27, address 0x4A | Probably [U26](#u26-nxp-pca9517a-i2c-repeater) | The FPGA (the only controller) |
-| `iic_pcie` | SCL R26, SDA R27 | PCIe edge connector: SMCLK on B5, SMDAT on B6 | Probably [U28](#u28-nxp-pca9517a-i2c-repeater). The YPCB sheet says U26 | The host. Its system-management controller (BMC) is normally the master, and the card answers as a target |
+| `iic_lm73` | SCL N24, SDA N25; ALERT P25 | [LM73](#u27-ti-lm73-0-temperature-sensor) U27, address 0x4A | [U26](#u26-nxp-pca9517a-i2c-repeater), by elimination | The FPGA (the only controller) |
+| `iic_pcie` | SCL R26, SDA R27 | PCIe edge connector: SMCLK on B5, SMDAT on B6 | [U28](#u28-nxp-pca9517a-i2c-repeater), continuity-checked. The YPCB sheet wrongly says U26 | The host. Its system-management controller (BMC) is normally the master, and the card answers as a target |
 
 The SCL/SDA pins use `LVCMOS18` with 8 mA drive and slow slew; ALERT is an `LVCMOS18` input. The example design gives each bus its own `axi_iic` core: IIC 0 at `0x4080_0000`, IIC 1 at `0x4081_0000` ([§8.1](#81-vivado-project)).
 
@@ -1063,9 +997,11 @@ The SCL/SDA pins use `LVCMOS18` with 8 mA drive and slow slew; ALERT is an `LVCM
 
 #### Which repeater is which?
 
-The YPCB pinout sheet lists the PCIe SMBus pins under "U26". On this card, though, U26 sits **directly behind the LM73** and U28 sits next to the SMBus fingers. That same sheet already gets the LM73's designator wrong. **TODO:** settle it with a continuity test.
+**U28 is the PCIe SMBus repeater; U26 is the LM73's.** A continuity test on unit 0265 showed U28 connected to the PCIe SMBus. U26 is the only other repeater, and it sits **directly behind the LM73**, so it serves the LM73 bus.
 
-Do the test with the board unpowered and the multimeter in continuity mode.
+The YPCB pinout sheet lists the PCIe SMBus pins under "U26", so its designators are wrong here. That is its second error on this card, after the LM73 ("U22").
+
+To repeat the check on another unit, or to confirm U26 directly with the LM73 rows below, test with the board unpowered and the multimeter in continuity mode.
 - **Finding the fingers:** PCIe finger B1 is the one nearest the bracket on the short segment, on the front side.
 - **Finding pin 1:** on the TSSOP8 repeaters, pin 1 is the corner next to the dot.
 
@@ -1110,39 +1046,160 @@ The authors used a Xilinx-compatible cable; the Vitis debug script in the exampl
 - **Strain relief:** hot glue holds it all, covers the J4 footprint and wraps around the board edge to the back.
 - **TODO:** record which conductor goes to which signal.
 
+### 6.8 Fan header
+
+<img src="images/r250_fan.jpg" width="300" alt="R250 on the back of unit 0265, where J3's yellow wire lands">
+
+J3 is a 4-pin white header on the front, at the bracket end. No board file defines a fan pin.
+
+On unit 0265 an AVC **BAZA0509R2U** blower is plugged in: 12 V, 0.18 A, hydraulic bearing, revision `.002`. It has three wires, and J3's 4th position is empty.
+
+| Wire | Probable function | Where it goes |
+|---|---|---|
+| Black | Ground | TODO? |
+| Red | +12 V | TODO? |
+| Yellow | Speed signal: tach output or PWM input (**TODO**, see below) | One side of **R250** on the back (checked on unit 0265). Not traced past R250 |
+
+**Where R250 is:** on the back at the bracket end, just below U33's lower-right corner, directly under R249. The unpopulated J5 pads (2 × 5 holes) are below it, and transistors Q1 and Q2 are just to its left (photo above).
+
+**Tach or PWM?** A 3-wire fan normally has no PWM input; its third wire is the tach output, an open-collector signal that pulses twice per revolution. To tell which it is here, unplug the fan, power the board and measure J3's yellow-wire pin:
+- a steady voltage (e.g. 3.3 V or 12 V) means the board pulls it up and reads it: a **tach input**;
+- 0 V, or a square wave on a scope, means the board drives it: a **PWM output**.
+
+**Next steps (board unpowered):**
+1. Measure R250's value.
+2. Beep R250's other side against Q1 and Q2, the J5 pads, U33 and the 3.3 V and 1.8 V rails (a pull-up would show here).
+3. If it disappears into a via and nothing beeps, it probably goes to an unassigned FPGA pin ([§5.1](#51-io-banks)), likely through Q1/Q2 or another level shifter, because the FPGA's I/O banks run at 1.8 V or less. A test bitstream that watches all unassigned pins while the fan spins would find it: the tach pin toggles at twice the fan's revolutions per second.
+
+### 6.9 Full pin map
+
+The corrected content of `constraints/physical_pinout.xlsx`. The pins match `part0_pins.xml`, `ypcb003381p1.xdc` and the MIG presets, but like them they are inherited from the YPCB-00338-1P1 ([§1.3](#13-relationship-to-ypcb-00338-1p1)). PCIe lanes, flash and JTAG are not in the sheet; see [§6.4](#64-pci-express), [§6.3](#63-bpi-configuration-flash) and [§6.7](#67-jtag).
+
+**Sensors, buses, LEDs, clocks and reset**
+
+| Group | Signal | FPGA pin | Bank | Notes |
+|---|---|---|---|---|
+| [U27](#u27-ti-lm73-0-temperature-sensor) LM73 | I²C SCL | N24 | 15 | Through repeater [U26](#u26-nxp-pca9517a-i2c-repeater) |
+| | I²C SDA | N25 | 15 | Through U26 |
+| | ALERT | P25 | 15 | Open-drain |
+| PCIe SMBus via [U28](#u28-nxp-pca9517a-i2c-repeater) | SMCLK (edge finger B5) | R26 | 15 | |
+| | SMDAT (edge finger B6) | R27 | 15 | |
+| [LEDs](#66-leds-and-buttons) | Red, GPIO bit 0 | P30 | 15 | Active high |
+| | Green, GPIO bit 1 | M30 | 15 | Active high |
+| | Yellow, GPIO bit 2 | N30 | 15 | Active high |
+| PCIe | `PERST#` | Y26 | 14 | Active low |
+| [Clocks](#61-clocks-and-reset) | 50 MHz `SYS_CLK` | AA28 | 14 | Probably from [Y2](#y2-oscillator-probably-50-mhz) |
+| | 200 MHz clock 1 (CH0), P / N | AH27 / AH28 | 12 | |
+| | 200 MHz clock 2 (CH1), P / N | G25 / G26 | 17 | |
+| Reset | User reset `SYS_RSTN` | R28 | 15 | Push button, active low |
+
+**DDR3 address and control** (CH0 in bank 12, CH1 in bank 17; `RESET#` is in bank 13 for CH0 and bank 18 for CH1)
+
+| Signal | CH0 | CH1 |
+|---|---|---|
+| A0 | AK27 | E27 |
+| A1 | AN23 | C27 |
+| A2 | AL24 | B28 |
+| A3 | AK26 | D27 |
+| A4 | AH24 | C24 |
+| A5 | AH25 | D24 |
+| A6 | AL26 | C25 |
+| A7 | AJ24 | A24 |
+| A8 | AJ25 | A25 |
+| A9 | AM23 | J24 |
+| A10 | AL28 | F26 |
+| A11 | AL25 | D26 |
+| A12 | AM25 | H25 |
+| A13 | AK24 | D25 |
+| A14 | AM27 | B26 |
+| BA0 | AM26 | F24 |
+| BA1 | AP24 | J25 |
+| BA2 | AN28 | E24 |
+| CK_P | AN25 | B25 |
+| CK_N | AP25 | A26 |
+| CKE | AP27 | A28 |
+| CS# | AK28 | F28 |
+| RAS# | AJ29 | E28 |
+| CAS# | AP26 | E26 |
+| WE# | AN27 | F25 |
+| ODT | AK29 | B27 |
+| RESET# | AD31 | F18 |
+
+**DDR3 data, by chip**
+
+**CH0**
+
+| Byte | Chip | Side | Bank | DQ bits | DQ pins (bit order, low to high) | DQS P / N |
+|---|---|---|---|---|---|---|
+| 0 | U5 | front | 11 | 7:0 | AG17 AG16 AH17 AJ19 AH18 AH19 AJ16 AJ17 | AK16 / AK17 |
+| 1 | U6 | back | 11 | 15:8 | AL20 AN17 AL19 AM16 AL18 AL16 AM20 AN18 | AM17 / AM18 |
+| 2 | U7 | back | 11 | 23:16 | AL23 AN20 AK23 AP19 AN22 AN19 AM22 AP20 | AP21 / AP22 |
+| 3 | U8 | front | 11 | 31:24 | AJ21 AH22 AK21 AG21 AG22 AG20 AH23 AG23 | AH20 / AJ20 |
+| 4 | U9 | back | 13 | 39:32 | AJ32 AK32 AK31 AL30 AL34 AL31 AK34 AL29 | AK33 / AL33 |
+| 5 | U10 | front | 13 | 47:40 | AJ34 AH32 AJ30 AH34 AF31 AG30 AG31 AF30 | AG33 / AH33 |
+| 6 | U11 | front | 13 | 55:48 | AE32 AC33 AF33 AC32 AD34 AC34 AE33 AE31 | AE34 / AF34 |
+| 7 | U12 | back | 12 | 63:56 | AE26 AF29 AE24 AF28 AF24 AG25 AF26 AF25 | AE27 / AE28 |
+| 8 (ECC) | U13 | back | 13 | 71:64 | AN34 AP30 AM33 AN29 AP32 AP29 AM31 AP31 | AN32 / AP33 |
+
+**CH1**
+
+| Byte | Chip | Side | Bank | DQ bits | DQ pins (bit order, low to high) | DQS P / N |
+|---|---|---|---|---|---|---|
+| 0 | U1 | back | 16 | 7:0 | A29 B33 A31 C33 C32 A30 B30 A33 | B31 / B32 |
+| 1 | U14 | front | 16 | 15:8 | D31 F33 D30 D29 E33 E34 E31 F34 | D34 / C34 |
+| 2 | U15 | back | 18 | 23:16 | B23 A21 C23 B20 B22 A23 C20 B21 | A19 / A20 |
+| 3 | U16 | front | 16 | 31:24 | G31 G32 F29 F31 E29 G33 H33 H32 | H29 / H30 |
+| 4 | U17 | back | 18 | 39:32 | B18 C17 C19 B16 A18 A16 C18 B17 | D16 / D17 |
+| 5 | U18 | front | 17 | 47:40 | K27 L24 K24 L28 K26 M27 L25 M26 | K28 / K29 |
+| 6 | U19 | front | 18 | 55:48 | F16 E18 E16 H19 H17 H20 E17 H18 | G17 / G18 |
+| 7 | U20 | back | 18 | 63:56 | D20 F21 E23 G21 G20 D21 F20 F23 | G22 / G23 |
+| 8 (ECC) | U21 | front | 16 | 71:64 | L34 K34 K31 K33 L31 J30 L33 J34 | K32 / J32 |
+
 ---
 
 ## 7. Working with Vivado
 
 ### 7.1 Board files
 
-The board files live in `dupcb001003/1.0/` in the submodule.
+This folder has its own, corrected copy of the board files in [`dupcb001003/1.0/`](dupcb001003/1.0/). It is based on the submodule's `dupcb001003/1.0/`, which is TiferKing's YPCB-00338-1P1 board files under a new folder name.
 
-**Install:**
-1. Copy `dupcb001003/` into `<Vivado>/<version>/data/boards/board_files/`, creating `board_files/` if needed.
-2. In a new project, choose **"YPCB-00338-1P1 Accelerator Card"**. Filtering by vendor `tiferking.cn` helps find it.
+**Install** (either way works):
+- Copy `dupcb001003/` into `<Vivado>/<version>/data/boards/board_files/`, creating `board_files/` if needed.
+- Or point Vivado at this folder, for example in `Vivado_init.tcl`: `set_param board.repoPaths [list <path-to>/boards/DU-PCB-001-003]`.
 
-> [!NOTE]
-> Watch out for three things when installing:
-> - **The folder is renamed but the board inside is not.** `board.xml` still declares vendor `tiferking.cn`, name `ypcb003381p1`, revision 1.0 and the display name "YPCB-00338-1P1 Accelerator Card". Install **either** `dupcb001003/` **or** TiferKing's `ypcb003381p1/`, not both. They declare the same board ID, and apart from the image and license they are identical.
-> - **The board image is a Git LFS file.** In a checkout without LFS, `ypcb003381p1_image.jpg` is only a 131-byte pointer, so run `git lfs pull` first. Without it the board image in Vivado is broken, which is harmless.
-> - **The upstream README is out of date:** its "Project structure" still shows the folder as `ypcb003381p1/`.
+In a new project, choose **"DU-PCB-001-003 Accelerator Card"** (vendor `johndoe`). It has its own board ID, so it can be installed next to TiferKing's `ypcb003381p1` files.
 
 **Identifiers**
 
 | | |
 |---|---|
-| Board part | `tiferking.cn:ypcb003381p1:part0:1.0` (`board.xml` schema 2.2, file version 1.0) |
-| FPGA part | `xc7k480tffg1156-2`. The silicon is marked -2LI ([U3](#u3-xilinx-xc7k480t-l2ffg1156i)) |
+| Board part | `johndoe:dupcb001003:part0:1.0` (`board.xml` schema 2.2, file version 1.0) |
+| Board revision | 3.3, from the `REV 3.3` on the board label |
+| FPGA part | **`xc7k480tiffg1156-2L`**: the -2LI (0.95 V) speed specifications ([U3](#u3-xilinx-xc7k480t-l2ffg1156i)) |
 | Power-estimation parameters | `heat_sink_type` = medium, heat-sink temperature 20–30 °C |
 | JTAG chain | `part0` only |
+
+**What differs from the submodule's board files**
+
+| File | Change |
+|---|---|
+| `board.xml`, `xitem.json` | Vendor `johndoe` instead of `tiferking.cn`, name `dupcb001003` instead of `ypcb003381p1`, display name, description, URL and credits (TiferKing, Sergey Ershov) |
+| `board.xml`, `part0_pins.xml` | FPGA part `xc7k480tiffg1156-2L` instead of `xc7k480tffg1156-2` |
+| `mig_0.prj`, `mig_1.prj`, `mig_01.prj` | Target FPGA `xc7k480ti-ffg1156/-2L` instead of `xc7k480t-ffg1156/-2`. Nothing else changed: same pins, timing and Micron memory part ([§6.2](#mig-presets)) |
+| `part0_pins.xml` | The 200 MHz clocks use `DIFF_SSTL15` instead of `LVDS`, which is invalid on this chip ([§6.1](#61-clocks-and-reset)) |
+| `preset.xml` | `util_ds_buf` on the 200 MHz clocks is `IBUFDS` instead of `IBUFDSGTE` (the transceiver buffer). The PCIe reference clock keeps `IBUFDSGTE` |
+| `board.xml` | Compatible board revision 3.3 (from the label) instead of 1.0 |
+| `board.xml` | Component descriptions name the parts and designators: U3, U27 (`LM73CIMKX-0`) behind U26, the PCIe SMBus behind U28, U4 |
+| `dupcb001003_image.jpg` | Photo of unit 0265 (a real JPEG, not an LFS pointer) |
+
+All pins are unchanged. **These files have not been loaded in Vivado yet.** **TODO:** open them in Vivado and build a test design.
 
 **Board interfaces** (shown in the *Board* tab of the block design):
 
 | Interface | Preferred IP | Preset |
 |---|---|---|
 | `default_50mhz_clk0` | `clk_wiz` | `PRIM_IN_FREQ=50`, single-ended clock-capable pin |
-| `default_200mhz_clk1`, `default_200mhz_clk2` | `clk_wiz`, `util_ds_buf` | `clk_wiz`: 200 MHz, differential clock-capable pin. `util_ds_buf`: `IBUFDSGTE`, which is wrong for these pins ([§6.1](#61-clocks-and-reset)) |
+| `default_200mhz_clk1`, `default_200mhz_clk2` | `clk_wiz`, `util_ds_buf` | `clk_wiz`: 200 MHz, differential clock-capable pin. `util_ds_buf`: `IBUFDS` (the submodule's files say `IBUFDSGTE`, which is wrong; [§6.1](#61-clocks-and-reset)) |
 | `ddr3_sdram_ch0` / `ch1` / `ch01` | `mig_7series` | `mig_0.prj` / `mig_1.prj` / `mig_01.prj` (2 GB / 2 GB / 4 GB; [§6.2](#mig-presets)) |
 | `bpi_flash` | `axi_emc` | 16-bit linear flash with the timings in [§6.3](#63-bpi-configuration-flash) |
 | `led_3bits` | `axi_gpio`, `iomodule`, `microblaze_mcs` | 3 outputs on GPIO channel 1 or 2, or 3-bit GPO1–4 |
@@ -1168,7 +1225,7 @@ For designs without a block design, `constraints/` in the submodule provides:
 |---|---|
 | `ypcb003381p1.xdc` | PCIe TX P pins, refclk P and `PERST#`; LM73 I²C and ALERT; SMBus; LEDs; `SYS_CLK` (AA28) and `SYS_RSTN` (R28); all flash pins. Port names match the example's `top_wrapper.v`. It does **not** constrain the 200 MHz clocks or the DDR3 pins |
 | `MEMORY_CH0.ucf`, `MEMORY_CH1.ucf` | DDR3 pin LOCs for each channel (117 nets each). **These are ISE-format UCF files, which Vivado does not read.** Either translate them to XDC (`set_property PACKAGE_PIN ...`) or let MIG generate the constraints from the `.prj` |
-| `physical_pinout.xlsx` | One-sheet pin map: DDR pins grouped by chip designator, the 200 MHz clocks, the LM73 (labelled U22, actually U27), the SMBus (labelled U26, probably U28 on this card), LEDs, `PERST#`, the 50 MHz clock and reset |
+| `physical_pinout.xlsx` | One-sheet pin map: DDR pins grouped by chip, the 200 MHz and 50 MHz clocks, LM73, SMBus, LEDs, `PERST#` and reset. Two of its designators are wrong for this card; the corrected content is in [§6.9](#69-full-pin-map) |
 
 For transceiver placement, also add `pcie_port.xdc` ([§6.4](#64-pci-express)).
 
@@ -1207,13 +1264,13 @@ write_cfgmem -format mcs -size 64 -interface BPIx16 \
 
 ### 8.1 Vivado project
 
-`examples/YPCB_00338_1P1_systest` is a Vivado 2022.2 MicroBlaze system test that uses every board interface. It is built on the board part from [§7.1](#71-board-files), with Vivado's default synthesis and implementation settings. The project ships with:
+`examples/YPCB_00338_1P1_systest` is a Vivado 2022.2 MicroBlaze system test that uses every board interface. It is built on the submodule's board part `tiferking.cn:ypcb003381p1:part0:1.0` (part `xc7k480tffg1156-2`), with Vivado's default synthesis and implementation settings. To use it with this folder's board files ([§7.1](#71-board-files)), change the project's board part and let Vivado upgrade the IP. The project ships with:
 - the block design (`top.bd`) and the generated `top_wrapper.v`;
 - the hardware export `top_wrapper.xsa` (it contains `top_wrapper.bit`, `.mmi` and `.hwh` files);
 - the synthesized and routed checkpoints;
 - `pcie_port.xdc`.
 
-The project file contains absolute paths from the author's machine, so install the board files first.
+The project file contains absolute paths from the author's machine, so install board files before opening it.
 
 | Block | Configuration |
 |---|---|
@@ -1284,29 +1341,42 @@ The app has no XDMA code, so test PCIe from the host. `documents/Xilinx_Answer_6
 
 ## 9. Known issues, open questions and TODOs
 
-**Upstream claims that don't hold for this card**
-- **The FPGA is marked `L2I` (-2LI), not -2I.** The board files use `xc7k480tffg1156-2`. **TODO:** measure VCCINT (it should be 0.95 V) and check the exact Vivado part name with `get_parts` ([U3](#u3-xilinx-xc7k480t-l2ffg1156i)).
-- **The pinout sheet's "U22 = LM73" is wrong for this card:** the LM73 is U27 ([U27](#u27-ti-lm73-0-temperature-sensor)).
-- **Its "U26 = PCIe SMBus" is probably wrong too.** **TODO:** run the continuity test ([§6.5](#which-repeater-is-which)).
-- **The DRAM is SK hynix, but the MIG presets are for Micron.** **TODO:** measure VDDQ ([§6.2](#micron-presets-on-sk-hynix-chips)).
+**Open questions**
+- **Is `xc7k480tiffg1156-2L` the right Vivado part?** It follows from the `L2I` marking and DS182's naming rule ([U3](#u3-xilinx-xc7k480t-l2ffg1156i)), but has not been checked in Vivado. **TODO:** run `get_parts xc7k480tiffg1156-2L`; it should print the name back.
+- **Do this folder's board files work?** They have not been loaded in Vivado yet. **TODO:** install them and build a test design ([§7.1](#71-board-files)).
+- **Is the inherited pinout right for this card?** All pin data comes from the YPCB-00338-1P1 files ([§1.3](#13-relationship-to-ypcb-00338-1p1)). Only the PCIe SMBus → U28 connection has been checked on the board.
 
-**Unverified inheritance**
-- All pin data is inherited from YPCB-00338-1P1 ([§1.3](#13-relationship-to-ypcb-00338-1p1)). The matching designators make shared pinouts likely, but no test of DDR, PCIe, LEDs or the sensor on DU-PCB is documented.
-- **Supplies:** no voltage has been measured: VCCINT, VCCO, VDDQ, VREF and the GTX rails ([§5.3](#53-supplies-and-regulators)).
-- **Mode pins and CFGBVS:** their strapping is unverified ([§5.1](#51-io-banks)).
+**Known issues**
+- **The submodule's board files** declare TiferKing's board ID (`tiferking.cn:ypcb003381p1`), target `xc7k480tffg1156-2`, and give the 200 MHz clocks `LVDS` and `IBUFDSGTE`. All of these are fixed in this folder's copy ([§7.1](#71-board-files)).
+- **The MIG presets target Micron MT41K256M8, but the card has SK hynix H5TC2G83FFR chips** ([§6.2](#micron-presets-on-sk-hynix-chips)).
+- **`physical_pinout.xlsx` has two wrong designators:** "U22" for the LM73 (it is U27) and "U26" for the SMBus repeater (it is U28). The corrected content is in [§6.9](#69-full-pin-map).
+- **Constraints:** no file sets the configuration properties, and the DDR3 `.ucf` files are ISE format ([§7.2](#72-constraints-for-hdl-flows), [§7.3](#73-programming-and-booting-from-flash)).
+- **Example coverage:** the memory test checks only 4 KB per channel, and there is no XDMA test ([§8](#8-example-design)).
 
-**Hardware not covered by any file**
-- **TODO:** identify U22, U23, U24, U29, U30, U34, U35/U37, U38, U39, U40 and the oscillators Y1, Y2, Y3 ([§3.5](#35-oscillators), [§3.6](#36-unidentified-ics)).
-- **TODO:** confirm the exact part behind the `95378BMC` marking on Q7/Q8 ([Q8](#q8-power-stage-marked-95378bmc)).
-- **TODO:** map the 4 bracket LEDs to the 3 LED pins. The purpose of SW3, J4, J5 and the small SMD LEDs is also unknown ([§4](#4-connectors-switches-and-leds)).
-- **TODO:** work out the fan header's pinout, and whether the FPGA can control or monitor the fan.
-- **TODO:** record unit 0265's JTAG ribbon wiring ([§6.7](#67-jtag)).
+#### Measurements to make on the board
 
-**Tooling problems**
-- **The 200 MHz clock presets are wrong for this package:** `LVDS` and `IBUFDSGTE` should not be used on HR fabric pins ([§6.1](#61-clocks-and-reset)).
-- **Board ID conflict:** the board files still identify as YPCB-00338-1P1, so they conflict with TiferKing's original folder ([§7.1](#71-board-files)).
-- **Constraints:** the constraint files contain no configuration properties, and the `.ucf` files are ISE format ([§7.2](#72-constraints-for-hdl-flows), [§7.3](#73-programming-and-booting-from-flash)).
-- **Example coverage:** the memory test only checks 4 KB per channel, and the example has no XDMA test ([§8](#8-example-design)).
+Voltages need the board powered, in a PC slot (a riser cable makes the back reachable). Continuity and resistance checks need it unpowered.
+
+| # | What | How / where | Expected, and what it settles |
+|---|---|---|---|
+| 1 | VCCINT, VCCAUX, VCCBRAM | Vivado Hardware Manager reads them from the XADC over JTAG, even with no bitstream loaded | VCCINT 0.95 V confirms -2LI; VCCAUX 1.8 V ([§5.3](#53-supplies-and-regulators)) |
+| 2 | Mode pins M[2:0] | Hardware Manager: the device's configuration status register (STAT bits 10:8 in UG470) | `010` means master BPI, so the card boots from the flash ([§6.3](#63-bpi-configuration-flash)) |
+| 3 | DDR3 VDDQ, VREF and VTT | DRAM decoupling capacitors; the output side of L4 (U36); U38's pins | VDDQ 1.5 or 1.35 V decides the MIG voltage setting; VREF and VTT should be VDDQ / 2. A VDDQ / 2 output on U38 supports the TPS51200 lead ([U38](#u38-1200-58f-s06z)) |
+| 4 | Every regulator's output | The output side of each inductor: L1/L2 (Q7/Q8), L4 (U36), the 10 µH next to U35, L6 (U40) | Maps each regulator to its rail ([§5.3](#53-supplies-and-regulators)) |
+| 5 | Bank 0 voltage (VCCO_0) | J1 pin 2 (VREF) | Probably 1.8 V; CFGBVS must match ([§5.1](#51-io-banks)) |
+| 6 | Repeater and sensor supplies | U26/U28 pin 1 (VCCA) and pin 8 (VCCB); U27 pins 1 (ADDR), 3 (VDD) and 5 (ALERT) | 1.8 V and 3.3 V sides; ADDR = VDD (address 0x4A); ALERT's idle level ([§6.5](#65-i2c-buses)) |
+| 7 | Oscillators | Y1, Y3 and Y2 output pads with a scope, and their supply pads | 200, 200 and 50 MHz; LVDS or LVPECL levels ([§3.5](#35-oscillators)) |
+| 8 | U26 directly | Continuity: U27 pin 4 → U26 pin 7, U27 pin 6 → U26 pin 6 | Confirms U26 is the LM73 repeater ([§6.5](#which-repeater-is-which)) |
+| 9 | U33's PMBus | Continuity from U33 pins 5–7 to J5, fingers B5/B6 and both sides of U26/U28; resistance from pins 11 and 12 to ground | Whether the core-rail telemetry is reachable, and U33's address ([U33](#u33-ti-tps40428-buck-controller)) |
+| 10 | Fan signal | J3's yellow-wire pin with the fan unplugged and the board powered; then R250's other side | Tach input or PWM output, and where it goes ([§6.8](#68-fan-header)) |
+| 11 | J5, SW3, SW1/SW2 and U24 | Voltages on J5's pins and on SW3 in both positions; continuity from the switches to U24 | What these parts do ([§4](#4-connectors-switches-and-leds)) |
+| 12 | LEDs | A test bitstream driving the 3 LED pins; diode mode for the 4th bracket LED and the SMD LEDs | Which LED each pin lights ([§6.6](#66-leds-and-buttons)) |
+| 13 | JTAG ribbon on unit 0265 | Continuity from each conductor to J1 | Records the hard-wired cable ([§6.7](#67-jtag)) |
+| 14 | Q7/Q8 package | Count the leads and measure the body | Settles the `95378BMC` package conflict ([Q8](#q8-power-stage-marked-95378bmc)) |
+
+#### Parts to identify
+
+U22, U23, U24, U29, U30, U34, U35/U37, U38, U39 and U40, and the oscillators Y1, Y2 and Y3 ([§3.5](#35-oscillators), [§3.6](#36-unidentified-ics)). A loupe or USB microscope with low-angle light may read the unreadable markings (Y2, U40).
 
 ---
 
@@ -1319,10 +1389,11 @@ The app has no XDMA code, so test PCIe from the host. `documents/Xilinx_Answer_6
 | Path | Contents |
 |---|---|
 | `README.md` | This document |
-| `unit0265_front_labeled.jpg`, `unit0265_back_labeled.jpg` | Unit 0265 with every IC labelled (3000 px wide) |
-| `unit0265_front.jpg`, `unit0265_back.jpg` | Unit 0265, from the photos taken 2026-11-10, downscaled to 2000 px |
-| `board_front.jpg`, `board_back.jpg` | Unit 0300, from the upstream images `image/README/1784059585733.jpg` and `resources/pictures/IMG_20260623_214413.jpg`, downscaled to 2000 px |
-| `images/` | One cropped photo per IC ([§3](#3-integrated-circuits)), all from unit 0265 |
+| `dupcb001003/1.0/` | Corrected Vivado board files, board part `johndoe:dupcb001003:part0:1.0` ([§7.1](#71-board-files)) |
+| `images/unit0265_front_labeled.jpg`, `images/unit0265_back_labeled.jpg` | Unit 0265 with every IC labelled (3000 px wide) |
+| `images/unit0265_front.jpg`, `images/unit0265_back.jpg` | Unit 0265, from the photos taken 2026-11-10, downscaled to 2000 px |
+| `images/board_front.jpg`, `images/board_back.jpg` | Unit 0300, from the upstream images `image/README/1784059585733.jpg` and `resources/pictures/IMG_20260623_214413.jpg`, downscaled to 2000 px |
+| `images/` (everything else) | Cropped photos from unit 0265: one per IC ([§3](#3-integrated-circuits)), plus `r250_fan.jpg` ([§6.8](#68-fan-header)) |
 
 **The submodule (`submodules/DU-PCB-001-003`)**
 
@@ -1346,6 +1417,7 @@ Apart from `README.md`, the two `LICENSE` files, `.gitattributes` and the photos
 | 2024-12-13 to 2025-01-01 | TiferKing | YPCB-00338-1P1 hack: board files, constraints, example project and the sensor-pin fixes |
 | 2026-07-12 to 2026-07-28 | SergeRuff (Sergey Ershov) | Forked for DU-PCB-001-003: translated the README, added photos (LFS), updated the license, moved the board files to `dupcb001003/` |
 | 2026-09-03 | SergeRuff | Revised the "More information" section of the README (latest commit `b8ef274`) |
+| 2026-11-10 to 2026-11-11 | This workspace | Photographed unit 0265, wrote this README, made the corrected board files in `dupcb001003/` |
 
 ### 10.3 Links
 
@@ -1365,6 +1437,7 @@ Apart from `README.md`, the two `LICENSE` files, `.gitattributes` and the photos
 - [TI TPS40428](https://www.ti.com/lit/ds/symlink/tps40428.pdf)
 - [TI CSD95378BQ5MC](https://www.ti.com/lit/ds/symlink/csd95378bq5mc.pdf) (probable match for Q7/Q8)
 - [TI TPS53319](https://www.ti.com/lit/ds/symlink/tps53319.pdf)
+- [TI TPS51200](https://www.ti.com/lit/ds/symlink/tps51200.pdf) (possible match for U38)
 - [SK hynix H5TC2G83FFR (unofficial)](https://dtsheet.com/model/1811300)
 - Local copies in the submodule's `documents/`: 7-series selection guide, LM73, MT28GU512AAA1EGC-0SIT, MT41K256M8DA-125, Xilinx AR 65444
 - Other Xilinx documents referenced by these files (not in the repo): DS180 (7-series overview), UG470 (configuration), UG586 (MIG), PG195 (XDMA), PG054 (7-series PCIe)

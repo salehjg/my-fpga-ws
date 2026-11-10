@@ -1,0 +1,40 @@
+{
+  "config": {
+    "items": [
+      {
+        "infra": {
+          "name": "dupcb001003",
+          "display": "DU-PCB-001-003 Accelerator Card",
+          "revision": "1.0",
+          "description": "Celestica DU-PCB-001-003 PCIe card with a Kintex-7 XC7K480T, 2 x DDR3L ECC channels and BPI flash",
+          "company": "johndoe",
+          "company_display": "johndoe",
+          "author": "johndoe",
+          "contributors": [
+            {
+              "group": "TiferKing",
+              "url": "www.tiferking.cn"
+            },
+            {
+              "group": "Sergey Ershov",
+              "url": "https://github.com/SergeRuff/DU-PCB-001-003"
+            }
+          ],
+          "category": "Single Part",
+          "logo": "dupcb001003_image.jpg",
+          "website": "https://github.com/SergeRuff/DU-PCB-001-003",
+          "search-keywords": [
+            "dupcb001003",
+            "DU-PCB-001-003",
+            "SCH-001-003",
+            "johndoe",
+            "board",
+            "Single Part"
+          ]
+        }
+      }
+    ]
+  },
+  "_major": 1,
+  "_minor": 0
+}
