@@ -694,6 +694,62 @@ Both are empty footprints on the back near the top edge, next to C363. U32 is an
 
 ---
 
+## FPGA I/O banks and voltages
+
+The XC7K480T in the FFG1156 package has:
+- **8 HR (high-range) I/O banks**, numbered 11–18, with 50 I/Os each;
+- the dedicated configuration bank **0**;
+- **8 GTX quads**, numbered 111–118.
+
+It has **no HP banks**, so `LVDS` (only `LVDS_25` at 2.5 V VCCO), DCI and VCCAUX_IO are not available. That is the root cause of the [200 MHz clock warning](#3-clocks-reset-leds-and-i2c).
+
+**How the table was built.**
+- **Banks:** every pin used by the board files and MIG presets was looked up in Xilinx's package file [`xc7k480tffg1156pkg.txt`](https://www.xilinx.com/support/packagefiles/k7packages/xc7k480tffg1156pkg.txt).
+- **VCCO:** inferred from the I/O standards on each bank's pins in the example design, since all standards in one bank must share one VCCO. **Nobody has measured these on this card.**
+- **TODO?** marks values that no file backs up.
+
+### I/O banks
+
+| Bank | Type | VCCO | Why we think so | Pins assigned / I/Os | What is on it |
+|---|---|---|---|---|---|
+| 0 | Dedicated configuration | **TODO?** (probably 1.8 V) | No file says. J1's VREF pin (pin 2) normally sits at VCCO_0, so measure there | 21 dedicated pins | JTAG TCK/TMS/TDI/TDO to [J1](#7-jtag); CCLK, DONE, PROGRAM_B; INIT_B (SW1 on the YPCB); mode pins M[2:0] (**TODO?** probably strapped to `010`, master BPI); CFGBVS (**TODO?** must be GND for 1.8 V); XADC dedicated inputs (the XADC is used by [MIG](#4-ddr3-memory)) |
+| 11 | HR | 1.5 V (**TODO?** measure) | `SSTL15` / `DIFF_SSTL15` in the example design | 40 / 50 | [DDR3 CH0](#4-ddr3-memory) byte lanes 0–3: DQ[31:0], DQS0–3 |
+| 12 | HR | 1.5 V (**TODO?** measure) | As bank 11 | 38 / 50 | DDR3 CH0 address, command and CK; CH0 byte lane 7 (DQ[63:56]); [200 MHz clock 1](#3-clocks-reset-leds-and-i2c) on AH27/AH28, an SRCC pair, fed by [Y1 or Y3](#122-y1-oscillator-probably-200-mhz) |
+| 13 | HR | 1.5 V (**TODO?** measure) | As bank 11, plus `LVCMOS15` on RESET# | 41 / 50 | DDR3 CH0 byte lanes 4–6 and ECC lane 8 (DQ[71:32]); CH0 RESET# on AD31 |
+| 14 | HR, multi-function configuration | 1.8 V | `LVCMOS18` in the board files; must match the 1.8 V [flash](#13-u4-bpi-flash-micron-mt28gu512aaa1egc-0sit) | 35 / 50 | [BPI flash](#5-bpi-configuration-flash) DQ[15:0] (pins D00–D15), A[16:1] (pins A00–A15) and CE# (FCS_B); [50 MHz clock](#124-y2-oscillator-probably-50-mhz) on AA28 (MRCC); [PCIe PERST#](#6-pci-express) on Y26 (MRCC) |
+| 15 | HR, multi-function configuration | 1.8 V | `LVCMOS18` in the board files | 21 / 50 | [BPI flash](#5-bpi-configuration-flash) A[25:17] (pins A16–A24), ADV# (ADV_B), OE# (FOE_B), WE# (FWE_B); [user LEDs](#2-connectors-leds-and-switches-seen-on-the-photos) P30/M30/N30; [LM73](#14-u27-temperature-sensor-ti-lm73-0) SCL N24, SDA N25, ALERT P25; [PCIe SMBus](#why-two-i2c-repeaters) R26/R27; [user reset](#3-clocks-reset-leds-and-i2c) R28 |
+| 16 | HR | 1.5 V (**TODO?** measure) | As bank 11 | 40 / 50 | [DDR3 CH1](#4-ddr3-memory) byte lanes 0, 1, 3 and ECC lane 8 |
+| 17 | HR | 1.5 V (**TODO?** measure) | As bank 11 | 38 / 50 | DDR3 CH1 address, command and CK; CH1 byte lane 5; [200 MHz clock 2](#3-clocks-reset-leds-and-i2c) on G25/G26, an SRCC pair, fed by [Y1 or Y3](#123-y3-oscillator-probably-200-mhz) |
+| 18 | HR | 1.5 V (**TODO?** measure) | As bank 11, plus `LVCMOS15` on RESET# | 41 / 50 | DDR3 CH1 byte lanes 2, 4, 6, 7; CH1 RESET# on F18 |
+
+**Notes**
+- **Flash address numbering:** the FPGA's configuration address pins A00–A24 drive flash A1–A25, because the [flash is word-addressed](#5-bpi-configuration-flash). The `D16`–`D31` names on the bank-14 address pins only matter in x32 modes.
+- **Why `axi_emc` can reach the flash:** banks 14 and 15 read the flash during configuration and become ordinary user I/O afterwards. That is what lets `axi_emc` use the same pins.
+- **Unassigned pins:** 9 to 29 I/Os per bank appear in no file. The small SMD LEDs, SW3, U24 and the fan header may connect to some of them (**TODO?**, see [known issues](#12-known-issues-open-questions-and-todos)).
+- **DDR3 voltage:** the DDR banks are assumed to run at 1.5 V because the example design uses `SSTL15` and was built for that. The DRAMs are DDR3L and would also run at 1.35 V, so measure VCCO/VDDQ before relying on it ([§4](#4-ddr3-memory)).
+
+### GTX quads
+
+| Quad (bank) | Channels | Used for | Reference clock |
+|---|---|---|---|
+| 116 | GTXE2_CHANNEL_X0Y20–X0Y23 | [PCIe](#6-pci-express) lanes 0–3 (lane 0 is on X0Y23) | MGTREFCLK0_116 on J8/J7: the 100 MHz PCIe reference clock from the edge connector |
+| 115 | X0Y16–X0Y19 | PCIe lanes 4–7 (lane 4 is on X0Y19) | Shares quad 116's clock. Its own MGTREFCLK0/1 pins (R8/R7, U8/U7) appear in no file (**TODO?**). This quad also holds MGTRREF/MGTAVTTRCAL (T9/T10), the GTX calibration-resistor pins |
+| 111–114, 117, 118 | X0Y0–X0Y15, X0Y24–X0Y31 | Not used by any file. The card has no other high-speed connector, so probably unconnected (**TODO?**) | — |
+
+### Supplies
+
+| Rail | Value | Source |
+|---|---|---|
+| VCCINT | 0.95 V? | The FPGA is marked -2LI ([§1.1](#11-u3-fpga-xilinx-xc7k480t)). **TODO?** measure |
+| VCCBRAM | **TODO?** | — |
+| VCCAUX | 1.8 V | Fixed for the 7-series (DS182) |
+| VCCAUX_IO | Not present | This package has no HP banks and no VCCAUX_IO pins; MIG's 1.8 V setting is ignored |
+| VCCO_0, VCCO_11 … VCCO_18 | See the bank table | — |
+| DDR3 VREF | 0.75 V? | MIG uses external VREF (internal VREF disabled), so the DDR banks' VREF pins need VCCO/2. **TODO?** measure |
+| MGTAVCC / MGTAVTT / MGTVCCAUX | **TODO?** (DS182 nominal: 1.0 V / 1.2 V / 1.8 V) | The package has two GTX power groups, G10 and G11 |
+
+---
+
 ## 2. Connectors, LEDs and switches (seen on the photos)
 
 | Ref | What | Notes |
@@ -712,7 +768,7 @@ Both are empty footprints on the back near the top edge, next to C363. U32 is an
 
 ---
 
-## 3. Clocks, reset, LEDs and I²C
+## 3. Clocks, reset, LEDs and I2C
 
 Sources: `part0_pins.xml`, `constraints/ypcb003381p1.xdc` and `physical_pinout.xlsx`.
 
@@ -783,8 +839,8 @@ The card has two independent channels. Each channel is 72 bits wide: 9 x8 chips 
 
 | Setting | Value |
 |---|---|
-| Memory voltage option | 1.5 V (VCCAUX_IO 1.8 V) |
-| DCI and termination | DCI on DQ/DQS; 50 Ω internal termination on the HR banks; internal VREF off |
+| Memory voltage option | 1.5 V. The preset also sets VCCAUX_IO = 1.8 V, but that has no effect: this package has no HP banks and no VCCAUX_IO pins ([I/O banks](#fpga-io-banks-and-voltages)) |
+| DCI and termination | The DCI option is set, but HR banks have no DCI; the 50 Ω untuned split on-die termination is what gets used. Internal VREF is off, so the DDR banks' VREF pins need an external 0.75 V reference (TODO? measure) |
 | I/O power reduction | On |
 | XADC | MIG instantiates the XADC for temperature tracking. The device has only one XADC, so to use it yourself, disable it in MIG and drive `device_temp_i` |
 | I/O standards in the example's routed checkpoint | `SSTL15` on address, command and DQ; `DIFF_SSTL15` on CK and DQS; `IN_TERM UNTUNED_SPLIT_50` on DQ/DQS; `LVCMOS15` on `RESET#`; fast slew |
@@ -1280,6 +1336,7 @@ Apart from `README.md`, the two `LICENSE` files, `.gitattributes` and the photos
 - [SK hynix H5TC2G83FFR (unofficial)](https://dtsheet.com/model/1811300)
 
 **Vendor pages**
+- Xilinx package pinout for the XC7K480T-FFG1156 (pin → bank map): https://www.xilinx.com/support/packagefiles/k7packages/xc7k480tffg1156pkg.txt
 - Kintex-7 product page (from `board.xml`): https://www.xilinx.com/products/adaptive-socs-and-fpgas/fpga/kintex-7.html
 - XDMA Windows driver source request (from AR 65444): https://www.xilinx.com/member/xdma_windows_driver.html
 - Linux XDMA driver: https://github.com/Xilinx/dma_ip_drivers
