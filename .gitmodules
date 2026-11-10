@@ -1,0 +1,6 @@
+[submodule "submodules/ypcb_00338_1p1_hack"]
+	path = submodules/ypcb_00338_1p1_hack
+	url = https://github.com/TiferKing/ypcb_00338_1p1_hack.git
+[submodule "submodules/openTPU"]
+	path = submodules/openTPU
+	url = https://github.com/FeSens/openTPU.git
