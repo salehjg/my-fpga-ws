@@ -4,3 +4,9 @@
 [submodule "submodules/openTPU"]
 	path = submodules/openTPU
 	url = https://github.com/FeSens/openTPU.git
+[submodule "submodules/DU-PCB-001-003"]
+	path = submodules/DU-PCB-001-003
+	url = https://github.com/SergeRuff/DU-PCB-001-003.git
+[submodule "submodules/sch-001-003-hack"]
+	path = submodules/sch-001-003-hack
+	url = https://github.com/omasanori/sch-001-003-hack.git
