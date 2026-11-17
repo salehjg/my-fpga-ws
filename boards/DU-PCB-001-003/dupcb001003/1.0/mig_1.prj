@@ -184,7 +184,7 @@
       <Pin IN_TERM="" IOSTANDARD="" PADName="F25" SLEW="" VCCAUX_IO="" name="ddr3_we_n"/>
     </PinSelection>
     <System_Clock>
-      <Pin Bank="17" PADName="G25/G26(CC_P/N)" name="c1_sys_clk_p/n"/>
+      <Pin Bank="17" PADName="G25/G26(CC_P/N)" name="sys_clk_p/n"/>
     </System_Clock>
     <TimingParameters>
       <Parameters tcke="5" tfaw="30" tras="35" trcd="13.75" trefi="7.8" trfc="160" trp="13.75" trrd="6" trtp="7.5" twtr="7.5"/>

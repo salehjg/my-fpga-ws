@@ -184,7 +184,7 @@
       <Pin IN_TERM="" IOSTANDARD="" PADName="AN27" SLEW="" VCCAUX_IO="" name="ddr3_we_n"/>
     </PinSelection>
     <System_Clock>
-      <Pin Bank="12" PADName="AH27/AH28(CC_P/N)" name="c0_sys_clk_p/n"/>
+      <Pin Bank="12" PADName="AH27/AH28(CC_P/N)" name="sys_clk_p/n"/>
     </System_Clock>
     <System_Control>
       <Pin Bank="Select Bank" PADName="No connect" name="sys_rst"/>
