@@ -96,5 +96,9 @@
     <pin index="91" name ="linear_flash_ce_n" iostandard="LVCMOS18" loc="V30"/>
     <pin index="92" name ="linear_flash_oen" iostandard="LVCMOS18" loc="T33"/>
     <pin index="93" name ="linear_flash_wen" iostandard="LVCMOS18" loc="T34"/>
+    <!-- FPGA_KEEPALIVE (AC24): MUST stay high after configuration. If AC24 goes low, a circuit on the
+         card clears the FPGA within ~250 ms (red SMD LED blinks, INIT_B pulses low, FPGA left blank).
+         Use BITSTREAM.CONFIG.UNUSEDPIN Pullup, or drive/pull this pin high. See README section 3, "Keep-alive pin AC24". -->
+    <pin index="94" name="FPGA_KEEPALIVE" iostandard="LVCMOS18" loc="AC24"/>
   </pins> 
 </part_info>

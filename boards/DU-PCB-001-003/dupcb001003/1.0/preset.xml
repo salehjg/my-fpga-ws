@@ -96,6 +96,16 @@
       </user_parameters> 
     </ip>  
   </ip_preset> 
+  <ip_preset preset_proc_name="fpga_keepalive_preset">
+    <ip vendor="xilinx.com" library="ip" name="axi_gpio" ip_interface="GPIO">
+      <user_parameters>
+        <user_parameter name="CONFIG.C_GPIO_WIDTH" value="1"/>
+        <user_parameter name="CONFIG.C_ALL_OUTPUTS" value="1"/>
+        <user_parameter name="CONFIG.C_ALL_INPUTS" value="0"/>
+        <user_parameter name="CONFIG.C_DOUT_DEFAULT" value="0x00000001"/>
+      </user_parameters>
+    </ip>
+  </ip_preset>
   <ip_preset preset_proc_name="led_3bits_preset"> 
     <ip vendor="xilinx.com" library="ip" name="axi_gpio" ip_interface="GPIO"> 
       <user_parameters> 

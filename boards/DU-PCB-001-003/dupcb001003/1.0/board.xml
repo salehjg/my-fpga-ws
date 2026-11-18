@@ -10,7 +10,7 @@
     <revision id="0">3.3</revision> 
   </compatible_board_revisions>  
   <file_version>1.0</file_version>  
-  <description>Celestica DU-PCB-001-003 (label SCH-001-003) PCIe x8 card: Kintex-7 XC7K480T, 2 x 72-bit DDR3L (64-bit + ECC), 64 MB BPI flash. Derived from the TiferKing YPCB-00338-1P1 board files.</description>  
+  <description>Celestica DU-PCB-001-003 (label SCH-001-003) PCIe x8 card: Kintex-7 XC7K480T, 2 x 72-bit DDR3L (64-bit + ECC), 64 MB BPI flash. Derived from the TiferKing YPCB-00338-1P1 board files. IMPORTANT: pin AC24 must stay high after configuration or the card clears the FPGA; use BITSTREAM.CONFIG.UNUSEDPIN Pullup (see component fpga_keepalive).</description>  
   <parameters> 
     <parameter name="heat_sink_type" value="medium" value_type="string"/>  
     <parameter name="heat_sink_temperature" value_type="range" value_min="20.0" value_max="30.0"/> 
@@ -192,6 +192,19 @@
             </port_map> 
           </port_maps> 
         </interface>  
+        <interface mode="master" name="fpga_keepalive" type="xilinx.com:interface:gpio_rtl:1.0" of_component="fpga_keepalive" preset_proc="fpga_keepalive_preset">
+          <description>AC24 keep-alive: must be high after configuration or the card clears the FPGA. Drag into a block design to get a 1-bit output-only axi_gpio whose output defaults to 1. Leave it at 1 (do not write 0 to the GPIO data register).</description>
+          <preferred_ips>
+            <preferred_ip vendor="xilinx.com" library="ip" name="axi_gpio" order="0"/>
+          </preferred_ips>
+          <port_maps>
+            <port_map logical_port="TRI_O" physical_port="fpga_keepalive_tri_o" dir="out">
+              <pin_maps>
+                <pin_map port_index="0" component_pin="FPGA_KEEPALIVE"/>
+              </pin_maps>
+            </port_map>
+          </port_maps>
+        </interface>
         <interface mode="master" name="pci_express_x1" type="xilinx.com:interface:pcie_7x_mgt_rtl:1.0" of_component="pci_express" preset_proc="pciex1_preset"> 
           <preferred_ips> 
             <preferred_ip vendor="xilinx.com" library="ip" name="xdma" order="0"/>  
@@ -665,6 +678,9 @@
     <component name="bpi_flash" display_name="Linear flash" type="chip" sub_type="memory_flash_bpi" major_group="External Memory" part_name="MT28GU512AAA1EGC" vendor="Micron">
       <description>512 Mbit (64 MB) x16 BPI parallel NOR flash (U4)</description>
     </component>
+    <component name="fpga_keepalive" display_name="FPGA keep-alive (AC24, keep HIGH)" type="chip" sub_type="chip" major_group="Miscellaneous" part_name="Unknown" vendor="Unknown">
+      <description>Pin AC24 (bank 14, LVCMOS18) MUST be high after configuration. If it is low (Vivado's default UNUSEDPIN Pulldown, or a floating pin), a circuit on the card clears the FPGA within about 250 ms: the red SMD LED near the bracket blinks, INIT_B pulses low and the FPGA stays blank. Add set_property BITSTREAM.CONFIG.UNUSEDPIN Pullup [current_design] to every design, or make AC24 a port that is pulled up or driven high from configuration on (not from a register that starts at 0, such as an axi_gpio left at its default output of 0). The board interface fpga_keepalive gives a 1-bit axi_gpio whose output defaults to 1 (never write 0 to it). See the README, section 3 (Keep-alive pin AC24).</description>
+    </component>
   </components>  
   <jtag_chains> 
     <jtag_chain name="chain1"> 
@@ -707,6 +723,9 @@
     </connection> 
     <connection name="part0_bpi_flash" component1="part0" component2="bpi_flash">
       <connection_map name="part0_bpi_flash_1" c1_st_index="49" c1_end_index="93" c2_st_index="0" c2_end_index="44"/>
+    </connection>
+    <connection name="part0_fpga_keepalive" component1="part0" component2="fpga_keepalive">
+      <connection_map name="part0_fpga_keepalive_1" c1_st_index="94" c1_end_index="94" c2_st_index="0" c2_end_index="0"/>
     </connection>
   </connections>  
   <ip_associated_rules> 
