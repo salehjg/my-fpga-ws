@@ -10,6 +10,7 @@ A PCIe x8 FPGA card with a Xilinx Kintex-7 XC7K480T, two 72-bit DDR3L ECC channe
 
 *This workspace's unit (serial `0265`), with every IC labelled.*
 - **Label colours:** white box with green border = identified, yellow = unidentified (TODO), grey = not populated. The purple labels sit on the DRAM chips.
+- **Also marked:** the connectors and parts identified on the card itself: J1 (JTAG), J3 (fan), SW1/SW2, the bracket LEDs, the green `DONE` and red SMD LEDs ([§3](#3-keep-alive-pin-ac24), [§12.6](#small-smd-leds-red-and-green)), and on the back R250, where the fan's yellow wire lands ([§12.8](#128-fan-header)).
 - **Size:** the images are 3000 px wide; open them full size to read the small parts.
 - **Details:** each IC is described in [§9](#9-integrated-circuits).
 
