@@ -1,7 +1,7 @@
 # DU-PCB-001-003 (SCH-001-003): Kintex-7 480T accelerator card
 
 A PCIe x8 FPGA card with a Xilinx Kintex-7 XC7K480T, two 72-bit DDR3L ECC channels and a 64 MB BPI configuration flash, designed by Baidu USA in 2015 and built by Celestica. This document has two jobs:
-- **Part A (using the card):** how to get your own designs running on it, with tested Vivado 2026.1 scripts, and what is special about this card.
+- **Part A (using the card):** how to get your own designs running on it, with tested Vivado 2026.1 scripts, a LiteX setup, and what is special about this card.
 - **Part B (hardware reference):** everything known about the board, chip by chip and pin by pin.
 
 ![Unit 0265 front, every IC labelled](images/unit0265_front_labeled.jpg)
@@ -22,7 +22,7 @@ A PCIe x8 FPGA card with a Xilinx Kintex-7 XC7K480T, two 72-bit DDR3L ECC channe
 *Part A: Using the card*
 
 1. [Overview](#1-overview): what the card is, what has been verified, how it relates to YPCB-00338-1P1
-2. [Getting started](#2-getting-started): board files, JTAG, a first test, the example in three commands, all scripts
+2. [Getting started](#2-getting-started): board files, JTAG, a first test, the example in three commands, all scripts, LiteX
 3. [Keep-alive pin AC24](#3-keep-alive-pin-ac24): the one rule every design must follow, and why
 4. [Example: MicroBlaze-V blinker with DDR check](#4-example-microblaze-v-blinker-with-ddr-check): a complete, tested design
 5. [Simulating and debugging](#5-simulating-and-debugging): RTL simulation, on-chip waveforms, the Vitis debugger
@@ -62,6 +62,7 @@ A PCIe x8 FPGA card with a Xilinx Kintex-7 XC7K480T, two 72-bit DDR3L ECC channe
 | Other | LM73 temperature sensor, PCIe SMBus, 14-pin JTAG header, fan header, 4 bracket LEDs, 2 push buttons ([§10](#10-connectors-switches-and-leds), [§12](#12-interfaces-and-pinout)) |
 | Special | Pin **AC24 must stay high** after configuration ([§3](#3-keep-alive-pin-ac24)). Vivado's built-in flash programming does not work on this card ([§6](#6-configuration-flash)) |
 | Vivado support | Corrected board files, a master XDC, a tested MicroBlaze-V example and flash tools, all scripted for Vivado/Vitis 2026.1 ([§2](#2-getting-started)) |
+| LiteX support | One setup script for a LiteX 2026.08 SoC: PCIe Gen2 x8, both DDR3 channels, all three clocks, AC24 handled ([§2.8](#28-litex)) |
 
 **What has been verified on unit 0265** (2026-11-18, Vivado/Vitis 2026.1):
 
@@ -76,7 +77,9 @@ A PCIe x8 FPGA card with a Xilinx Kintex-7 XC7K480T, two 72-bit DDR3L ECC channe
 | BPI flash pins | **Work**: the whole 64 MB was read back ([§6.2](#62-backing-up-the-flash)) |
 | Configuration settings | **Confirmed** from the FPGA's status register: mode pins `010` (master BPI), bus width x16, CFGBVS = GND, PUDC_B = low |
 | Writing the flash | **Not yet**: no working method ([§6.5](#65-writing-the-flash)) |
-| DDR3 channel 1, 200 MHz clock 2, PCIe, both I²C buses, LM73, reset button | Untested on this card |
+| DDR3 channels 0 and 1 under LiteX (DDR3-1000, 64-bit, no ECC) | **Work** (2026-11-20): both calibrate from the host and pass 1 GB self-tests at 7.2 GB/s ([§2.8](#28-litex)) |
+| PCIe (LiteX, Gen2) | **Works**: BAR0 registers and the BIOS console over PCIe; linked at x4 in an x4 slot, x8 not yet tried ([§2.8](#28-litex)) |
+| 200 MHz clock 2, both I²C buses, LM73, reset button | Untested on this card. The LiteX `status.sh` measures clock 2 ([§2.8](#28-litex)) |
 
 ### 1.2 Identification
 
@@ -94,7 +97,7 @@ A PCIe x8 FPGA card with a Xilinx Kintex-7 XC7K480T, two 72-bit DDR3L ECC channe
 The card is a close relative of the Inspur **YPCB-00338-1P1** ([sibling README](../YPCB-00338-1P1-kintex7-480t/README.md)). The DU-PCB-001-003 support repository copies TiferKing's YPCB-00338-1P1 board files, constraints and examples **byte for byte**.
 
 > [!IMPORTANT]
-> **Every pin assignment in this document comes from the YPCB-00338-1P1 files.** The ones exercised on this card so far match: the LEDs, the 50 MHz and first 200 MHz clocks, all of DDR3 channel 0, the flash and the PCIe SMBus repeater ([§1.1](#11-at-a-glance)). Treat the rest (DDR3 channel 1, PCIe lanes, I²C, LM73) as inherited, not verified. One thing the YPCB files do **not** have is the keep-alive pin AC24 ([§3](#3-keep-alive-pin-ac24)); the YPCB card does not seem to need it.
+> **Every pin assignment in this document comes from the YPCB-00338-1P1 files.** The ones exercised on this card so far match: the LEDs, the 50 MHz and first 200 MHz clocks, all of DDR3 channel 0, the flash and the PCIe SMBus repeater ([§1.1](#11-at-a-glance)); the LiteX setup also exercises DDR3 channel 1 and the PCIe lanes ([§2.8](#28-litex)). Treat the rest (second 200 MHz clock, I²C, LM73) as inherited, not verified. One thing the YPCB files do **not** have is the keep-alive pin AC24 ([§3](#3-keep-alive-pin-ac24)); the YPCB card does not seem to need it.
 >
 > **Evidence that the two boards share a layout:**
 > - All 18 DRAMs carry exactly the designators the YPCB pinout sheet uses (U1 and U5–U21).
@@ -196,6 +199,31 @@ Every script in this folder. "Folder" means `boards/DU-PCB-001-003/`. All were r
 | [`tools/flash_reader/build.tcl`](tools/flash_reader/build.tcl) | `vivado -mode batch -source build.tcl` | Inside `tools/flash_reader/` | `frd/` project and `top.bit`: a JTAG-to-AXI → `axi_emc` flash reader that drives AC24 high | [§6.2](#62-backing-up-the-flash) |
 | [`tools/flash_reader/dump.tcl`](tools/flash_reader/dump.tcl) | `vivado -mode batch -source dump.tcl` | Inside `tools/flash_reader/`, after `build.tcl` | `raw_hex.txt`: all 64 MB of the flash (about 7 min); then it reboots the card from the flash. Read-only | [§6.2](#62-backing-up-the-flash) |
 | [`tools/flash_reader/convert.py`](tools/flash_reader/convert.py) | `python3 convert.py raw_hex.txt <name>` | Anywhere | `<name>.bin` and `<name>.mcs` in Vivado's BPI x16 order; prints SHA-256, sync word, IDCODE and used size | [§6.2](#62-backing-up-the-flash) |
+| [`litex/setup.litex.du-pcb.py`](litex/setup.litex.du-pcb.py) | `python3 <folder>/litex/setup.litex.du-pcb.py --workdir <dir>` (`--help` for options, `--pack` to save edits back) | Anywhere; needs `python3`, `git`, `bash` and Vivado | A LiteX work directory: LiteX 2026.08 in `deps/` and `.venv/`, the board/target files and the daily `scripts/` (build, load, PCIe rescan, DDR init, status, console) | [§2.8](#28-litex) |
+
+### 2.8 LiteX
+
+[`litex/setup.litex.du-pcb.py`](litex/setup.litex.du-pcb.py) is a LiteX alternative to the Vivado block-design flow, aimed at using the card as a PCIe accelerator. It is a single Python file (standard library only) that carries the whole project inside it: running it unpacks the board, target and scripts into a work directory, downloads LiteX release 2026.08 and sets up a venv. Full usage is in [`litex/README.md`](litex/README.md).
+
+```
+python3 boards/DU-PCB-001-003/litex/setup.litex.du-pcb.py --workdir ~/dupcb
+cd ~/dupcb
+scripts/build.sh          # full bitstream, ~50 min (--no-compile-gateware for a ~1 min check)
+scripts/load.sh           # JTAG load; then after every load or power cycle:
+scripts/pcie_rescan.sh    # let Linux find the card again
+scripts/ddr_init.sh       # calibrate and self-test both DDR3 channels (~12 s)
+scripts/status.sh         # ident, measured clocks, LEDs
+```
+
+What the SoC contains:
+- **CPU:** VexRiscv at 125 MHz with its BIOS console over PCIe (the card has no UART). Optional for accelerator work.
+- **PCIe:** Gen2 x8 with BAR0 (128 KB) for all control registers and one DMA channel; a LitePCIe Linux driver is generated, but the host tools use BAR0 directly.
+- **DDR3:** both channels, 2 GB each, 64 bits wide (the ECC lane is unused) at DDR3-1000, each with its own LiteDRAM controller. CH0 is the CPU's main RAM; CH1 is free for accelerator logic in the `accel` clock domain.
+- **Why a custom DDR PHY:** these banks cannot do DDR3 write leveling, so the project uses `wl7ddrphy.py` (a port of openTPU's PHY) and calibrates from the host with `scripts/ddr_init.sh`. The BIOS's own "Memtest KO" at boot is expected. Measured on unit 0265: 893 ps of write-timing margin on CH0, 1429 ps on CH1, error-free 1 GB self-tests at 7.2 GB/s.
+- **Clocks:** 200 MHz clock 1 → `sys` (125 MHz) and the DDR MMCMs; 200 MHz clock 2 → `accel` (200 MHz); 50 MHz → `clk50`. `status.sh` measures `clk50` and `accel`.
+- **Board specifics:** AC24 is driven high and unused pins are pulled up ([§3](#3-keep-alive-pin-ac24)); the three bracket LEDs run a chaser. The bitstream is loaded over JTAG only; writing it to flash is not supported yet.
+
+To change the project, edit the unpacked files in the work directory and run `python3 setup.litex.du-pcb.py --pack` there to store them back into the script. [`litex/plan1.md`](litex/plan1.md) holds the original design notes.
 
 ---
 
@@ -1273,7 +1301,7 @@ The card has two independent channels. Each channel is 72 bits wide: 9 x8 chips 
 | System clock | 200 MHz clock 1: AH27/AH28 (bank 12) | 200 MHz clock 2: G25/G26 (bank 17) |
 | Pin files | `constraints/MEMORY_CH0.ucf`, `mig_0.prj` | `constraints/MEMORY_CH1.ucf`, `mig_1.prj` |
 
-In total that is **4 GB usable** and 4.5 GB raw (18 × 256 MB). **CH0 with `mig_0.prj` is verified on unit 0265**: it calibrates at DDR3-1066 and passes the [example's](#4-example-microblaze-v-blinker-with-ddr-check) memory tests. CH1 is untested.
+In total that is **4 GB usable** and 4.5 GB raw (18 × 256 MB). **CH0 with `mig_0.prj` is verified on unit 0265**: it calibrates at DDR3-1066 and passes the [example's](#4-example-microblaze-v-blinker-with-ddr-check) memory tests. CH1 is verified only with the LiteX setup (custom PHY, DDR3-1000, ECC lane unused; [§2.8](#28-litex)), not yet with MIG.
 
 #### MIG presets
 
@@ -1724,7 +1752,7 @@ The app has no XDMA code, so test PCIe from the host. `documents/Xilinx_Answer_6
 ## 14. Known issues, open questions and TODOs
 
 **Open questions**
-- **Is the rest of the inherited pinout right for this card?** All pin data comes from the YPCB-00338-1P1 files ([§1.3](#13-relationship-to-ypcb-00338-1p1)). Verified so far: the LEDs, the 50 MHz and first 200 MHz clocks, DDR3 CH0, the flash and the PCIe SMBus repeater ([§1.1](#11-at-a-glance)). Untested: DDR3 CH1, the second 200 MHz clock, PCIe, I²C, the LM73 and the reset button.
+- **Is the rest of the inherited pinout right for this card?** All pin data comes from the YPCB-00338-1P1 files ([§1.3](#13-relationship-to-ypcb-00338-1p1)). Verified so far: the LEDs, the 50 MHz and first 200 MHz clocks, DDR3 CH0, the flash and the PCIe SMBus repeater ([§1.1](#11-at-a-glance)), plus DDR3 CH1 and PCIe with LiteX ([§2.8](#28-litex)). Untested: the second 200 MHz clock, I²C, the LM73 and the reset button.
 - **What does AC24 connect to, and why is Vivado's pull-up flash helper still cleared?** ([§3](#3-keep-alive-pin-ac24), measurement 15.)
 - **Answered:** the Vivado part `xc7k480tiffg1156-2L` and this folder's board files work: every design in this folder is built with them and loads on unit 0265.
 
@@ -1780,6 +1808,7 @@ U22, U23, U24, U29, U30, U34, U35/U37, U38, U39 and U40, and the oscillators Y1,
 | `examples/microblaze_v_blinky/` | MicroBlaze-V blinker with DDR check: `create_project.tcl` + `design_1_bd.tcl` (Vivado project), `create_vitis.py` (Vitis platform and app), `run_on_board.tcl` (xsdb load and LED monitor), `blinky.c`, `lscript.ld`, the testbench `tb_design_1.sv`, `build_sim_elf.sh` ([§4](#4-example-microblaze-v-blinker-with-ddr-check), [§5](#5-simulating-and-debugging)) |
 | `tools/board_alive/` | LEDs-only sanity bitstream (LED pins, both clocks, reset button) ([§4](#4-example-microblaze-v-blinker-with-ddr-check)) |
 | `tools/flash_reader/` | JTAG flash reader (block design, wrapper, pins, build/dump Tcl, `convert.py`) ([§6](#6-configuration-flash)) |
+| `litex/` | LiteX setup: `setup.litex.du-pcb.py` (self-unpacking project and installer), `README.md` (usage and SoC details), `plan1.md` (design notes) ([§2.8](#28-litex)) |
 | `flash_backup/` | 64 MB backup of unit 0265's flash (2026-11-18): `.bin`, gzipped `.mcs`, the vendor sector, `SHA256SUMS` and a README describing the contents ([§6](#6-configuration-flash)) |
 | `images/unit0265_front_labeled.jpg`, `images/unit0265_back_labeled.jpg` | Unit 0265 with every IC labelled (3000 px wide) |
 | `images/unit0265_front.jpg`, `images/unit0265_back.jpg` | Unit 0265, from the photos taken 2026-11-10, downscaled to 2000 px |
@@ -1810,6 +1839,7 @@ Apart from `README.md`, the two `LICENSE` files, `.gitattributes` and the photos
 | 2026-09-03 | SergeRuff | Revised the "More information" section of the README (latest commit `b8ef274`) |
 | 2026-11-10 to 2026-11-11 | This workspace | Photographed unit 0265, wrote this README, made the corrected board files in `dupcb001003/` |
 | 2026-11-18 | This workspace | First designs on unit 0265: found the keep-alive pin AC24; added the master XDC, the `fpga_keepalive` board interface, the MicroBlaze-V example with scripts, the flash reader, and the flash backup; verified the board files, DDR3 CH0 and the configuration settings |
+| 2026-11-20 | This workspace | Added the LiteX setup (`litex/`): PCIe SoC with both DDR3 channels on a custom write-leveling-free PHY; verified DDR3 CH1 and PCIe |
 
 ### 15.3 Links
 
